@@ -1,0 +1,42 @@
+import {randomBytes} from 'node:crypto';
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const origin=process.env.TEST_ORIGIN||'http://127.0.0.1:4183';
+const a=randomBytes(32).toString('base64url'),b=randomBytes(32).toString('base64url');
+async function request(action,{token='',data,cookie=''}={}){
+ const r=await fetch(`${origin}/api/index?action=${action}`,{method:data?'POST':'GET',headers:{...(token?{Authorization:'Bearer '+token}:{}),...(data?{'Content-Type':'application/json','X-Requested-With':'birthday',Origin:origin}:{}),...(cookie?{Cookie:cookie}:{})},body:data?JSON.stringify(data):undefined});
+ const json=await r.json();return {status:r.status,body:json,cookie:r.headers.get('set-cookie')?.split(';')[0]};
+}
+const answer={name:'QA Первый',status:'yes',adults:1,children:1,ages:'7',food:'QA PRIVATE FOOD',song:'QA test song',drink:'wine',version:0};
+assert.equal((await request('admin')).status,401);
+const [ra,rb]=await Promise.all([request('answer',{token:a,data:answer}),request('answer',{token:b,data:{...answer,name:'QA Второй'}})]);
+assert.equal(ra.status,200,JSON.stringify(ra.body));assert.equal(rb.status,200,JSON.stringify(rb.body));
+fs.mkdirSync('.local-data',{recursive:true});
+const manifest={ids:[ra.body.answer.id,rb.body.answer.id],photoIds:[]};
+fs.writeFileSync('.local-data/last-api-test.json',JSON.stringify(manifest));
+let shared=await request('public');assert.ok(shared.body.guests.find(g=>g.name===answer.name));assert.ok(shared.body.guests.find(g=>g.name==='QA Второй'));assert.equal(JSON.stringify(shared.body).includes('QA PRIVATE FOOD'),false);assert.equal(JSON.stringify(shared.body).includes('"ages"'),false);
+const mine=await request('me',{token:a});assert.equal(mine.body.answer.food,answer.food);
+const other=await request('me',{token:b});assert.equal(other.body.answer.name,'QA Второй');
+assert.equal((await request('answer',{token:a,data:answer})).status,409);
+assert.equal((await request('admin-answer',{token:a,data:{...answer,id:rb.body.answer.id}})).status,401);
+assert.equal((await request('photo',{token:a,data:{image:'data:image/jpeg;base64,YmFk',caption:'bad'}})).status,400);
+const image=fs.readFileSync(process.env.TEST_IMAGE||'docs/assets/film-still.png').toString('base64');
+const photo=await request('photo',{token:a,data:{image:'data:image/png;base64,'+image,caption:'QA upload'}});
+assert.equal(photo.status,201,JSON.stringify(photo.body));
+const photoId=photo.body.id;
+manifest.photoIds.push(photoId);fs.writeFileSync('.local-data/last-api-test.json',JSON.stringify(manifest));
+assert.equal((await fetch(`${origin}/api/index?action=photo&id=${photoId}`)).status,200);
+assert.equal((await request('photo-remove',{token:b,data:{id:photoId}})).status,403);
+const password=fs.readFileSync('admin-access.txt','utf8').match(/Пароль: (.+)/)[1].trim();
+const login=await request('login',{data:{password}});assert.equal(login.status,200,JSON.stringify(login.body));
+assert.equal((await request('admin',{cookie:login.cookie})).status,200);
+assert.equal((await request('admin-photo',{cookie:login.cookie,data:{id:photoId,hidden:true}})).status,200);
+assert.equal((await fetch(`${origin}/api/index?action=photo&id=${photoId}`)).status,404);
+assert.equal((await request('public')).body.photos.some(p=>p.id===photoId),false);
+assert.equal((await request('admin-photo',{cookie:login.cookie,data:{id:photoId,hidden:false}})).status,200);
+assert.equal((await request('photo-remove',{token:a,data:{id:photoId}})).status,200);
+assert.equal((await fetch(`${origin}/api/index?action=photo&id=${photoId}`)).status,404);
+const noHeaders=await fetch(`${origin}/api/index?action=answer`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(answer)});assert.equal(noHeaders.status,403);
+console.log('PASS: two independent guest codes; shared persistence; private fields; edit conflicts; host authorization; upload; public photo; owner removal; host moderation; CSRF guard.');
+// Record only synthetic IDs for precise cleanup; no edit codes or credentials.
+fs.mkdirSync('.local-data',{recursive:true});fs.writeFileSync('.local-data/last-api-test.json',JSON.stringify({ids:[ra.body.answer.id,rb.body.answer.id],photoIds:[photoId]}));

@@ -2,31 +2,31 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
+  <script>if(location.hostname==='stasrusakevich.github.io')location.replace('https://stas-good-day.vercel.app/'+location.hash);</script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#17191b">
   <meta name="description" content="7 ноября, Quattro Space. Собираю своих на один просто хороший день. Стас.">
   <title>Просто хороший день · 7 ноября</title>
-  <link rel="stylesheet" href="./style.css?v=20261019-2">
-  <script src="./app.js?v=20261019-2" defer></script>
+  <link rel="stylesheet" href="./style.css?v=release-1">
+  <script src="./app.js?v=release-1" defer></script>
+  <script src="./connected.js?v=release-1" defer></script>
 </head>
 <body>
   <a class="skip" href="#main">К содержанию</a>
-  <div class="preview-bar">
-    <span><span class="live-dot"></span>Прототип <span class="preview-detail">· ответы хранятся только в этом браузере</span></span>
-  </div>
+  <div id="connection-status" class="connection-status" role="status" hidden></div>
   <header class="site-header">
     <a href="#invite" class="brand" aria-label="Просто хороший день — на главную"><span class="brand-mark">СТАС<span>35</span></span><span class="brand-date">07 / 11 / 26</span></a>
     <nav class="desktop-nav" aria-label="Основная навигация">
-      <a href="#invite" data-route="invite">Приглашение</a><a href="#rsvp" data-route="rsvp">Мой ответ</a><a href="#people" data-route="people">Свои люди</a><a href="#place" data-route="place">Место</a><a href="#faq" data-route="faq">Вопросы</a>
+      <a href="#invite" data-route="invite">Приглашение</a><a href="#rsvp" data-route="rsvp">Мой ответ</a><a href="#people" data-route="people">Свои люди</a><a href="#place" data-route="place">Место</a><a href="#photos" data-route="photos">Фото</a><a href="#faq" data-route="faq">Вопросы</a>
     </nav>
     <a href="#admin" class="host-link" data-route="admin">Для Стаса <span>↗</span></a>
   </header>
   <main id="main" tabindex="-1"></main>
   <footer class="site-footer"><span>Просто хороший день.</span><span>7 ноября 2026 · Москва</span><a href="#invite">Обнимаю, Стас ↗</a></footer>
   <nav class="mobile-nav" aria-label="Мобильная навигация">
-    <a href="#invite" data-route="invite"><span>✳</span>Главная</a><a href="#rsvp" data-route="rsvp"><span>✓</span>Мой ответ</a><a href="#people" data-route="people"><span>◎</span>Люди</a><a href="#place" data-route="place"><span>⌖</span>Место</a><a href="#faq" data-route="faq"><span>?</span>Вопросы</a>
+    <a href="#invite" data-route="invite"><span>✳</span>Главная</a><a href="#rsvp" data-route="rsvp"><span>✓</span>Мой ответ</a><a href="#people" data-route="people"><span>◎</span>Люди</a><a href="#place" data-route="place"><span>⌖</span>Место</a><a href="#photos" data-route="photos"><span>▧</span>Фото</a><a href="#faq" data-route="faq"><span>?</span>Вопросы</a>
   </nav>
   <div id="toast" role="status" aria-live="polite"></div>
-  <dialog id="guest-dialog"><form id="guest-editor"><div class="dialog-heading"><h2>Приглашение</h2><button type="button" class="icon-button" data-action="close-dialog" aria-label="Закрыть">×</button></div><input name="id" type="hidden"><label>Имя или семья<input name="name" required maxlength="90" placeholder="Саша и Лена"></label><label>Ожидаемое число взрослых<input name="adults" type="number" min="1" max="10" value="2" required></label><button class="button primary" type="submit">Сохранить приглашение <span>↗</span></button><p class="small muted">Новая запись сохранится в демонстрационном списке этого браузера.</p></form></dialog>
+  <dialog id="guest-dialog"><form id="guest-editor"><div class="dialog-heading"><h2>Приглашение</h2><button type="button" class="icon-button" data-action="close-dialog" aria-label="Закрыть">×</button></div><input name="id" type="hidden"><label>Имя или семья<input name="name" required maxlength="90" placeholder="Саша и Лена"></label><label>Ожидаемое число взрослых<input name="adults" type="number" min="1" max="10" value="2" required></label><button class="button primary" type="submit">Сохранить приглашение <span>↗</span></button><p class="small muted">Запись сохранится в общем списке гостей.</p></form></dialog>
 </body>
 </html>
