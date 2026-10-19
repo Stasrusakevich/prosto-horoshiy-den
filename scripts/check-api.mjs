@@ -34,9 +34,21 @@ assert.equal((await request('admin-photo',{cookie:login.cookie,data:{id:photoId,
 assert.equal((await fetch(`${origin}/api/index?action=photo&id=${photoId}`)).status,404);
 assert.equal((await request('public')).body.photos.some(p=>p.id===photoId),false);
 assert.equal((await request('admin-photo',{cookie:login.cookie,data:{id:photoId,hidden:false}})).status,200);
+assert.equal((await request('admin-delete-answer',{token:b,data:{id:ra.body.answer.id,version:1}})).status,401);
+assert.equal((await request('admin-delete-answer',{cookie:login.cookie,data:{id:ra.body.answer.id,version:0}})).status,409);
+const removed=await request('admin-delete-answer',{cookie:login.cookie,data:{id:ra.body.answer.id,version:1}});assert.equal(removed.status,200);
+assert.equal((await request('public')).body.guests.some(g=>g.id===ra.body.answer.id),false);
+assert.equal((await request('public')).body.photos.some(p=>p.id===photoId),false);
+assert.equal((await fetch(`${origin}/api/index?action=photo&id=${photoId}`)).status,404);
+assert.equal((await request('me',{token:a})).body.answer,null);
+assert.equal((await request('answer',{token:a,data:{...answer,version:2}})).status,410);
+const hostAfterRemoval=await request('admin',{cookie:login.cookie});assert.ok(hostAfterRemoval.body.deletedGuests.some(g=>g.id===ra.body.answer.id));assert.equal(hostAfterRemoval.body.guests.some(g=>g.id===ra.body.answer.id),false);
+assert.equal((await request('admin-restore-answer',{cookie:login.cookie,data:{id:ra.body.answer.id,version:removed.body.answer.version}})).status,200);
+assert.ok((await request('public')).body.guests.some(g=>g.id===ra.body.answer.id));
+assert.equal((await fetch(`${origin}/api/index?action=photo&id=${photoId}`)).status,200);
 assert.equal((await request('photo-remove',{token:a,data:{id:photoId}})).status,200);
 assert.equal((await fetch(`${origin}/api/index?action=photo&id=${photoId}`)).status,404);
 const noHeaders=await fetch(`${origin}/api/index?action=answer`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(answer)});assert.equal(noHeaders.status,403);
-console.log('PASS: two independent guest codes; shared persistence; private fields; edit conflicts; host authorization; upload; public photo; owner removal; host moderation; CSRF guard.');
+console.log('PASS: independent guests; shared persistence; private fields; edit conflicts; host authorization; upload; public photo; owner removal; host moderation; recoverable guest deletion; CSRF guard.');
 // Record only synthetic IDs for precise cleanup; no edit codes or credentials.
 fs.mkdirSync('.local-data',{recursive:true});fs.writeFileSync('.local-data/last-api-test.json',JSON.stringify({ids:[ra.body.answer.id,rb.body.answer.id],photoIds:[photoId]}));

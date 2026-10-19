@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
 import { store, images } from '../lib/storage.mjs';
-import { HttpError, guestId, hash, cleanText, saveResponse, limit, publicData, verifyPassword, sessionToken, validSession } from '../lib/domain.mjs';
+import { HttpError, guestId, hash, cleanText, saveResponse, setResponseDeleted, limit, publicData, verifyPassword, sessionToken, validSession } from '../lib/domain.mjs';
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const tokenFrom=req=>(req.headers.authorization||'').replace(/^Bearer /,'');
@@ -28,11 +28,11 @@ export default async function handler(req,res){
     if(req.method==='GET'){
       const state=await store.read();
       if(action==='public')return json(res,200,publicData(state));
-      if(action==='me'){const id=guestId(tokenFrom(req));return json(res,200,{answer:state.responses[id]||null,photos:Object.values(state.photos).filter(p=>p.ownerId===id&&!p.deleted).map(p=>({id:p.id,caption:p.caption,hidden:p.hidden}))});}
-      if(action==='admin'){if(!isAdmin)throw new HttpError(401,'Войди в кабинет организатора.');return json(res,200,{guests:Object.values(state.responses),photos:Object.values(state.photos).filter(p=>!p.deleted).map(p=>({...p,name:state.responses[p.ownerId]?.name||'Гость'}))});}
+      if(action==='me'){const id=guestId(tokenFrom(req));return json(res,200,{answer:state.responses[id]?.deletedAt?null:state.responses[id]||null,photos:Object.values(state.photos).filter(p=>p.ownerId===id&&!p.deleted).map(p=>({id:p.id,caption:p.caption,hidden:p.hidden}))});}
+      if(action==='admin'){if(!isAdmin)throw new HttpError(401,'Войди в кабинет организатора.');return json(res,200,{guests:Object.values(state.responses).filter(g=>!g.deletedAt),deletedGuests:Object.values(state.responses).filter(g=>g.deletedAt),photos:Object.values(state.photos).filter(p=>!p.deleted&&!state.responses[p.ownerId]?.deletedAt).map(p=>({...p,name:state.responses[p.ownerId]?.name||'Гость'}))});}
       if(action==='photo'){
         const id=url.searchParams.get('id');if(!UUID.test(id||''))throw new HttpError(404,'Фото не найдено.');
-        const photo=state.photos[id];if(!photo||photo.deleted||(photo.hidden&&!isAdmin))throw new HttpError(404,'Фото не найдено.');
+        const photo=state.photos[id];if(!photo||photo.deleted||((photo.hidden||state.responses[photo.ownerId]?.deletedAt)&&!isAdmin))throw new HttpError(404,'Фото не найдено.');
         const result=await images.get(id);if(!result)throw new HttpError(404,'Фото не найдено.');
         res.setHeader('Content-Type','image/jpeg');res.setHeader('Content-Disposition','inline; filename="photo.jpg"');
         const buffer=Buffer.from(await new Response(result.stream).arrayBuffer());return res.end(buffer);
@@ -55,7 +55,7 @@ export default async function handler(req,res){
     }
     if(action==='photo'){
       const ownerId=guestId(tokenFrom(req));
-      const before=await store.read();if(!before.responses[ownerId])throw new HttpError(403,'Сначала сохрани своё имя в анкете.');
+      const before=await store.read();if(!before.responses[ownerId]||before.responses[ownerId].deletedAt)throw new HttpError(403,'Сначала сохрани своё имя в анкете.');
       await store.update(s=>limit(s,'upload:'+ip,12,10*60_000));
       const caption=cleanText(input.caption,200);
       if(typeof input.image!=='string'||!/^data:image\/(jpeg|png|webp);base64,/.test(input.image))throw new HttpError(400,'Выбери фото JPG, PNG или WebP.');
@@ -82,6 +82,11 @@ export default async function handler(req,res){
     if(action==='admin-photo'){
       if(!isAdmin)throw new HttpError(401,'Войди в кабинет организатора.');
       await store.update(s=>{const p=s.photos[input.id];if(!p||p.deleted)throw new HttpError(404,'Фото не найдено.');p.hidden=!!input.hidden;});return json(res,200,{ok:true});
+    }
+    if(action==='admin-delete-answer'||action==='admin-restore-answer'){
+      if(!isAdmin)throw new HttpError(401,'Войди в кабинет организатора.');
+      const answer=await store.update(s=>setResponseDeleted(s,input.id,action==='admin-delete-answer',input.version));
+      return json(res,200,{answer});
     }
     throw new HttpError(404,'Действие не найдено.');
   }catch(error){

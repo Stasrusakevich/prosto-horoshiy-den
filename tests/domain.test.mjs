@@ -1,9 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomBytes} from 'node:crypto';
-import {emptyState,saveResponse,publicData,guestId,passwordHash,verifyPassword,sessionToken,validSession,limit} from '../lib/domain.mjs';
+import {emptyState,saveResponse,setResponseDeleted,publicData,guestId,passwordHash,verifyPassword,sessionToken,validSession,limit} from '../lib/domain.mjs';
 import {createStore} from '../lib/storage.mjs';
 const answer={name:'Тест',status:'yes',adults:2,children:1,ages:'7',food:'Только организатору',drink:'wine',song:'Песня',reason:'Причина',goodDay:'Встреча',companions:'Друг'};
+test('Removing a response hides its people, song and photos; restoring retains data',()=>{
+ const s=emptyState();saveResponse(s,'one',answer,0);saveResponse(s,'two',{...answer,name:'Другой'},0);
+ s.photos.a={id:'a',ownerId:'one',caption:'Фото',createdAt:'2026-01-01'};
+ assert.throws(()=>setResponseDeleted(s,'one',true,0),{status:409});
+ setResponseDeleted(s,'one',true,1);
+ const data=publicData(s);assert.deepEqual(data.guests.map(g=>g.name),['Другой']);assert.equal(data.tracks.length,1);assert.equal(data.photos.length,0);
+ assert.throws(()=>saveResponse(s,'one',answer,2),{status:410});
+ assert.throws(()=>setResponseDeleted(s,'one',false,1),{status:409});
+ setResponseDeleted(s,'one',false,2);assert.equal(publicData(s).guests.length,2);assert.equal(publicData(s).photos.length,1);assert.equal(s.responses.one.food,answer.food);assert.equal(s.responses.one.version,3);
+});
 test('Public views never reveal food notes, ages, rejected guests or hidden photos',()=>{
  const state=emptyState();saveResponse(state,'one',answer,0);saveResponse(state,'two',{...answer,status:'no'},0);
  state.photos.a={id:'a',ownerId:'one',hidden:false,caption:'Фото',createdAt:'2026-01-01'};state.photos.b={id:'b',ownerId:'two',hidden:true};

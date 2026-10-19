@@ -12,7 +12,7 @@ async function refresh({own=false,admin=false}={}){
   const data=await api('public',{token:''});photos=data.photos;publicTracks=data.tracks;
   let publicGuests=data.guests;
   if(own&&guestToken){const mine=await api('me');ownAnswer=mine.answer;ownPhotos=mine.photos;}
-  if(admin||isAdmin){try{const host=await api('admin',{token:''});isAdmin=true;guests=host.guests;adminPhotos=host.photos;}catch(error){if(error.status!==401)throw error;isAdmin=false;guests=publicGuests;}}
+  if(admin||isAdmin){try{const host=await api('admin',{token:''});isAdmin=true;guests=host.guests;deletedGuests=host.deletedGuests||[];adminPhotos=host.photos;}catch(error){if(error.status!==401)throw error;isAdmin=false;guests=publicGuests;}}
   else guests=publicGuests;
   loadError='';loading=false;
 }
@@ -21,7 +21,16 @@ function recoveryPanel(){return `<details class="recovery"><summary>Мой от�
 function loginPage(){return `${pageHeading('Только для организатора','Для Стаса.','Войди, чтобы видеть все ответы, пожелания по еде и управлять фотографиями.')}<form id="login-form" class="login-form"><label class="field">Пароль<input type="password" name="password" autocomplete="current-password" required maxlength="200"></label><button class="button primary" type="submit">Войти ↗</button><p id="login-error" class="form-error" role="alert"></p></form>`;}
 const imageUrl=id=>'./api/index?action=photo&id='+encodeURIComponent(id);
 function photoCards(items,host=false){return items.length?`<div class="photo-grid">${items.map(p=>`<figure class="photo-card"><a href="${imageUrl(p.id)}" target="_blank" rel="noopener"><img src="${imageUrl(p.id)}" alt="${esc(p.caption||'Фото со Стасом')}" loading="lazy" width="600" height="450"></a><figcaption><strong>${esc(p.name||currentGuest().name)}</strong>${p.caption?`<p>${esc(p.caption)}</p>`:''}${host?`<button class="button small-btn" data-action="moderate-photo" data-id="${esc(p.id)}" data-hidden="${!p.hidden}">${p.hidden?'Показать гостям':'Скрыть из галереи'}</button>`:''}</figcaption></figure>`).join('')}</div>`:'<div class="empty">Здесь будут наши совместные фотографии. Добавь первую.</div>';}
-function gallery(){return `${pageHeading('Уже есть что вспомнить','Фото со мной.','Нашёл совместное фото? Добавь его сюда — соберём галерею нашей компании.')}<div class="photo-intro"><p>Фотографии и подписи видны всем, у кого есть ссылка на сайт. До 5 фото от каждого, JPG, PNG или WebP. Большие снимки уменьшим перед загрузкой.</p>${ownAnswer?`<form id="photo-form"><label class="field">Выбери фото<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required></label><label class="field">Пара слов о моменте<input name="caption" maxlength="200" placeholder="Где и когда это было — если хочется"></label><button class="button primary" type="submit">Добавить в галерею ↗</button><p id="photo-progress" role="status"></p><p id="photo-error" class="form-error" role="alert"></p></form>`:'<a class="button primary" href="#rsvp">Сначала представиться ↗</a>'}</div>${ownPhotos.length?`<details class="recovery"><summary>Мои фотографии (${ownPhotos.length} из 5)</summary>${ownPhotos.map(p=>`<div class="my-photo"><span>${esc(p.caption||'Фото без подписи')}${p.hidden?' · скрыто Стасом':''}</span><button class="button small-btn" data-action="remove-photo" data-id="${esc(p.id)}">Убрать моё фото</button></div>`).join('')}</details>`:''}${photoCards(photos)}`;}
+let photoPreviewUrl='';
+function uploadTile(ready){
+  const contents='<span class="upload-center"><span class="upload-button"><span aria-hidden="true">↑</span> <span id="upload-label">Загрузить фото</span></span><span class="upload-hint">'+(ready?'Выбери наш совместный снимок':'Сначала представься в анкете — и добавь наш снимок')+'</span></span>';
+  return ready?'<label class="upload-tile"><img id="upload-preview" alt="Предпросмотр выбранного фото" hidden>'+contents+'<input type="file" name="photo" aria-label="Загрузить фото" accept="image/jpeg,image/png,image/webp" required></label>':'<a class="upload-tile" href="#rsvp">'+contents+'</a>';
+}
+function gallery(){
+  if(photoPreviewUrl){URL.revokeObjectURL(photoPreviewUrl);photoPreviewUrl='';}
+  return `${pageHeading('Уже есть что вспомнить','Фото со мной.','Нашёл совместное фото? Добавь его сюда — соберём галерею нашей компании.')}<div class="photo-intro">${ownAnswer?`<form id="photo-form">${uploadTile(true)}<p class="selected-photo" id="selected-photo" role="status"></p><label class="field">Пара слов о моменте<input name="caption" maxlength="200" placeholder="Где и когда это было — если хочется"></label><button class="button primary" type="submit">Добавить в галерею ↗</button><p id="photo-progress" role="status"></p><p id="photo-error" class="form-error" role="alert"></p></form>`:uploadTile(false)}<p class="photo-help">Фотографии и подписи видны всем, у кого есть ссылка на сайт. До 5 фото от каждого, JPG, PNG или WebP. Большие снимки уменьшим перед загрузкой.</p></div>${ownPhotos.length?`<details class="recovery"><summary>Мои фотографии (${ownPhotos.length} из 5)</summary>${ownPhotos.map(p=>`<div class="my-photo"><span>${esc(p.caption||'Фото без подписи')}${p.hidden?' · скрыто Стасом':''}</span><button class="button small-btn" data-action="remove-photo" data-id="${esc(p.id)}">Убрать моё фото</button></div>`).join('')}</details>`:''}${photoCards(photos)}`;
+}
+function deletedGuestRows(){return '<p class="subtle-note">Удалённые записи не учитываются в списке гостей, плейлисте и галерее. Их можно восстановить.</p>'+ (deletedGuests.length?deletedGuests.map(g=>`<article class="deleted-row"><div><h3>${esc(g.name)}</h3><p>${countLabel(g)}</p></div><button class="button small-btn" data-action="restore-guest" data-id="${esc(g.id)}">Восстановить</button></article>`).join(''):'<div class="empty">Удалённых записей нет.</div>');}
 async function withForm(form,operation,errorId){
   if(form.dataset.busy)return;form.dataset.busy='true';const button=form.querySelector('[type=submit]');if(button)button.disabled=true;
   const errorBox=document.getElementById(errorId);if(errorBox)errorBox.textContent='';
@@ -64,6 +73,15 @@ document.addEventListener('submit',e=>{
 });
 document.addEventListener('change',async e=>{
   if(e.target.closest('#rsvp-form')&&['status','children'].includes(e.target.name))syncFormVisibility();
+  if(e.target.matches('#photo-form input[type=file]')){
+    const file=e.target.files[0],preview=document.getElementById('upload-preview'),tile=e.target.closest('.upload-tile');
+    if(photoPreviewUrl)URL.revokeObjectURL(photoPreviewUrl);
+    photoPreviewUrl=file?URL.createObjectURL(file):'';
+    preview.hidden=!file;if(file)preview.src=photoPreviewUrl;else preview.removeAttribute('src');
+    tile.classList.toggle('has-preview',!!file);
+    document.getElementById('upload-label').textContent=file?'Выбрать другое фото':'Загрузить фото';
+    document.getElementById('selected-photo').textContent=file?file.name+' · осталось добавить в галерею':'';
+  }
   if(e.target.id==='status-filter'){adminFilter=e.target.value;document.getElementById('admin-list').innerHTML=adminRows();}
   if(e.target.dataset.guestStatus){const g=guests.find(x=>x.id===e.target.dataset.guestStatus);e.target.disabled=true;try{await api('admin-answer',{method:'POST',data:{...g,status:e.target.value}});await refresh({admin:true,own:true});render();toast('Статус обновлён.');}catch(error){e.target.disabled=false;e.target.value=g.status;toast(error.message);}}
 });
@@ -74,6 +92,11 @@ document.addEventListener('click',async e=>{
   try{
     if(action==='calendar')calendar();
     if(action==='add-guest')editGuest();if(action==='edit-guest')editGuest(id);if(action==='close-dialog')document.getElementById('guest-dialog').close();
+    if(action==='delete-guest'||action==='restore-guest'){
+      const restoring=action==='restore-guest',g=(restoring?deletedGuests:guests).find(g=>g.id===id);if(!g)return;
+      button.disabled=true;await api(restoring?'admin-restore-answer':'admin-delete-answer',{method:'POST',data:{id,version:g.version}});
+      await refresh({admin:true,own:true});render();toast(restoring?'Запись восстановлена.':'Запись удалена. Вернуть её можно в разделе «Удалённые».');
+    }
     if(action==='export-guests')exportGuests();
     if(action==='export-songs')download('nash-pleylist.txt',playlistEntries().map(g=>`${g.song} — от ${g.name}${g.reason?'\n'+g.reason:''}`).join('\n\n'),'text/plain;charset=utf-8');
     if(action==='copy-code'){await navigator.clipboard.writeText(guestToken);toast('Личный код скопирован. Сохрани его для себя.');}

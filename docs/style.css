@@ -53,3 +53,17 @@ h1,h2{font-weight:750;letter-spacing:-.045em}h3{font-weight:600}
 @media(max-width:760px){.mobile-nav{grid-template-columns:repeat(6,minmax(0,1fr))}.photo-grid{grid-template-columns:1fr}.my-photo{align-items:flex-start;flex-direction:column}.recovery input[readonly]{font-size:11px}.photo-intro>p{font-size:14px}.admin-session{font-size:11px}.photo-intro input[type=file]{font-size:12px}}
 @media(max-width:1100px){.hero-description{font-size:22px}.family-quote{font-size:17px}}
 @media(max-width:760px){.hero-description{font-size:21px;line-height:1.5;margin-top:25px;max-width:none}.family-quote{font-size:17px;margin-top:22px}.preview-bar{min-height:40px}}
+
+/* Album-style upload card. The native file input remains keyboard accessible. */
+.upload-tile{position:relative;display:grid;place-items:center;isolation:isolate;width:100%;aspect-ratio:3/2;min-height:230px;overflow:hidden;border:1px solid #756454;padding:24px;background:#272a2c;cursor:pointer}
+.upload-tile:before{content:'';position:absolute;inset:-20px;background:url('./assets/film-still.webp') center/cover no-repeat;filter:blur(9px);transform:scale(1.08);opacity:.75;z-index:-2}
+.upload-tile:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#17191b25,#17191b9c);z-index:-1}
+.upload-center{display:flex;align-items:center;flex-direction:column;gap:16px;text-align:center;position:relative;z-index:1;pointer-events:none}
+.upload-button{display:inline-flex;align-items:center;gap:12px;justify-content:center;padding:16px 26px;min-height:56px;background:var(--green);color:#17191b;font-size:17px;font-weight:700;box-shadow:0 8px 30px #0005}
+.upload-button>span:first-child{font-size:25px;line-height:1}.upload-hint{font-size:14px;color:#fff;max-width:280px;text-shadow:0 1px 8px #000}
+.upload-tile:hover .upload-button{background:#dfa47b}.upload-tile:focus-within{outline:3px solid #e4a77e;outline-offset:4px}
+.upload-tile input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;z-index:2;padding:0;margin:0;border:0;max-width:none}
+.upload-tile #upload-preview{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}.upload-tile.has-preview:before{display:none}
+.photo-intro .photo-help{margin:20px 0 0;font-size:13px;line-height:1.7}.selected-photo{font-size:13px;color:var(--muted);overflow-wrap:anywhere}.selected-photo:empty{display:none}
+.delete-guest{color:#e3aa89;border-color:#715444}.deleted-row{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px 0;border-bottom:1px solid var(--line)}.deleted-row>div{min-width:0;overflow-wrap:anywhere}.deleted-row p{font-size:13px;color:var(--muted)}
+@media(max-width:760px){.upload-tile{min-height:230px;padding:18px}.upload-button{font-size:16px;padding:15px 20px}.upload-hint{font-size:13px}.deleted-row{align-items:flex-start;flex-direction:column;gap:12px}}
