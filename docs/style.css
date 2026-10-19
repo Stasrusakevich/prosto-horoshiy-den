@@ -38,3 +38,11 @@ h1,h2{font-weight:750;letter-spacing:-.045em}h3{font-weight:600}
 @media(max-width:760px){.hero{grid-template-columns:1fr;gap:32px;padding:32px 0}.hero h1{font-size:66px;line-height:.96}.hero h1 em:after{width:45px;height:4px;margin:13px 0 12px}.hero-art{max-width:none;padding:0}.film-image{height:auto;aspect-ratio:1.77}.age-stamp{margin-bottom:13px}.age-stamp strong{font-size:46px}.age-stamp small{font-size:10px}.film-caption strong{font-size:18px}.film-caption small{font-size:8px;max-width:100px}.art-footnote{font-size:9px;margin:14px 0 0}.personal-line{font-size:12px}.hero-description{font-size:14px}.intro-grid h2{font-size:36px}.preview-person select{min-height:44px}.page-heading h1{font-size:44px}.participation-top h2{font-size:30px}}
 @media(max-width:760px){.hero-copy{min-width:0}.hero h1{font-size:clamp(48px,14vw,66px)}.hero-actions{flex-direction:column;align-items:stretch}.hero-actions .button{width:100%}}
 @media(max-width:380px){.hero h1{font-size:50px}.film-caption strong{font-size:16px}.preview-person select{max-width:133px}}
+
+/* General invitation and prominent introduction. */
+.hero-description{font-size:24px;line-height:1.5;font-weight:550;max-width:480px;color:var(--ink)}
+.family-quote{margin:24px 0 0;padding:0 0 0 18px;border-left:2px solid var(--green);font-size:19px;line-height:1.55;color:var(--ink)}
+.family-quote strong{display:block;margin-top:12px;color:#dda17b;font-size:15px;letter-spacing:.03em}
+.guest-name{margin-bottom:28px}.guest-name input{max-width:100%}
+@media(max-width:1100px){.hero-description{font-size:22px}.family-quote{font-size:17px}}
+@media(max-width:760px){.hero-description{font-size:21px;line-height:1.5;margin-top:25px;max-width:none}.family-quote{font-size:17px;margin-top:22px}.preview-bar{min-height:40px}}

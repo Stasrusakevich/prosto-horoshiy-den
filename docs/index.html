@@ -6,14 +6,13 @@
   <meta name="theme-color" content="#17191b">
   <meta name="description" content="7 ноября, Quattro Space. Собираю своих на один просто хороший день. Стас.">
   <title>Просто хороший день · 7 ноября</title>
-  <link rel="stylesheet" href="./style.css">
-  <script src="./app.js" defer></script>
+  <link rel="stylesheet" href="./style.css?v=20261019-2">
+  <script src="./app.js?v=20261019-2" defer></script>
 </head>
 <body>
   <a class="skip" href="#main">К содержанию</a>
   <div class="preview-bar">
     <span><span class="live-dot"></span>Прототип <span class="preview-detail">· ответы хранятся только в этом браузере</span></span>
-    <label class="preview-person">Гость <select id="guest-switch" aria-label="Посмотреть приглашение другого гостя"></select></label>
   </div>
   <header class="site-header">
     <a href="#invite" class="brand" aria-label="Просто хороший день — на главную"><span class="brand-mark">СТАС<span>35</span></span><span class="brand-date">07 / 11 / 26</span></a>
@@ -28,6 +27,6 @@
     <a href="#invite" data-route="invite"><span>✳</span>Главная</a><a href="#rsvp" data-route="rsvp"><span>✓</span>Мой ответ</a><a href="#people" data-route="people"><span>◎</span>Люди</a><a href="#place" data-route="place"><span>⌖</span>Место</a><a href="#faq" data-route="faq"><span>?</span>Вопросы</a>
   </nav>
   <div id="toast" role="status" aria-live="polite"></div>
-  <dialog id="guest-dialog"><form id="guest-editor"><div class="dialog-heading"><h2>Приглашение</h2><button type="button" class="icon-button" data-action="close-dialog" aria-label="Закрыть">×</button></div><input name="id" type="hidden"><label>Имя или семья<input name="name" required maxlength="90" placeholder="Саша и Лена"></label><label>Личное обращение<input name="greeting" required maxlength="140" placeholder="Саша и Лена, давайте проведём"></label><label>Ожидаемое число взрослых<input name="adults" type="number" min="1" max="10" value="2" required></label><button class="button primary" type="submit">Сохранить приглашение <span>↗</span></button><p class="small muted">Новая запись сохранится в демонстрационном списке этого браузера.</p></form></dialog>
+  <dialog id="guest-dialog"><form id="guest-editor"><div class="dialog-heading"><h2>Приглашение</h2><button type="button" class="icon-button" data-action="close-dialog" aria-label="Закрыть">×</button></div><input name="id" type="hidden"><label>Имя или семья<input name="name" required maxlength="90" placeholder="Саша и Лена"></label><label>Ожидаемое число взрослых<input name="adults" type="number" min="1" max="10" value="2" required></label><button class="button primary" type="submit">Сохранить приглашение <span>↗</span></button><p class="small muted">Новая запись сохранится в демонстрационном списке этого браузера.</p></form></dialog>
 </body>
 </html>
