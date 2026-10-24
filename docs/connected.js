@@ -17,6 +17,7 @@ async function refresh({own=false,admin=false}={}){
   loadError='';loading=false;
 }
 async function boot(){try{await refresh({own:true,admin:route()==='admin'});}catch(error){loading=false;loadError=error.message;}render();}
+function dataUnavailable(){return `${pageHeading('Связь временно недоступна','Скоро вернёмся.','Ответы гостей и фотографии сейчас не загружаются. Это не означает, что список пуст.')}<div class="photo-intro"><p>Пока можно ответить Стасу в том чате, где получил приглашение. Дата, время и адрес доступны на сайте.</p><button class="button primary" data-action="retry-data">Проверить ещё раз</button> <a class="button" href="#place">Адрес площадки ↗</a></div>`;}
 function recoveryPanel(){return `<details class="recovery"><summary>Мой ответ на другом устройстве</summary><p>Личный код позволяет открыть и изменить только твой ответ. Сохрани его для себя и не передавай другим.</p>${ownAnswer?`<label class="field">Твой личный код<input readonly value="${esc(guestToken)}" autocomplete="off"></label><button type="button" class="button small-btn" data-action="copy-code">Скопировать код</button>`:''}<form id="recover-form"><label class="field">Уже отвечал с другого устройства?<input name="code" required autocomplete="off" placeholder="Вставь свой личный код" maxlength="43" minlength="43"></label><button class="button small-btn" type="submit">Открыть мой ответ</button></form><p class="form-error" id="recover-error" role="alert"></p></details>`;}
 function loginPage(){return `${pageHeading('Только для организатора','Для Стаса.','Войди, чтобы видеть все ответы, пожелания по еде и управлять фотографиями.')}<form id="login-form" class="login-form"><label class="field">Пароль<input type="password" name="password" autocomplete="current-password" required maxlength="200"></label><button class="button primary" type="submit">Войти ↗</button><p id="login-error" class="form-error" role="alert"></p></form>`;}
 const imageUrl=id=>'./api/index?action=photo&id='+encodeURIComponent(id);
@@ -90,6 +91,7 @@ document.addEventListener('click',async e=>{
   const tab=e.target.closest('[data-admin-tab]');if(tab){adminTab=tab.dataset.adminTab;render();return;}
   const button=e.target.closest('[data-action]');if(!button)return;const {action,id}=button.dataset;
   try{
+    if(action==='retry-data'){button.disabled=true;await refresh({own:true,admin:route()==='admin'});render();}
     if(action==='calendar')calendar();
     if(action==='add-guest')editGuest();if(action==='edit-guest')editGuest(id);if(action==='close-dialog')document.getElementById('guest-dialog').close();
     if(action==='delete-guest'||action==='restore-guest'){
@@ -105,7 +107,6 @@ document.addEventListener('click',async e=>{
     if(action==='remove-photo'){button.disabled=true;await api('photo-remove',{method:'POST',data:{id}});await refresh({own:true});render();}
   }catch(error){button.disabled=false;toast(error.message);}
 });
-window.addEventListener('hashchange',async()=>{render();window.scrollTo(0,0);main.focus({preventScroll:true});try{await refresh({admin:route()==='admin',own:route()==='rsvp'||route()==='photos'});if(!document.activeElement?.closest('form'))render();}catch(error){loadError=error.message;const box=document.getElementById('connection-status');box.hidden=false;box.textContent=loadError;}});
-// Update shared views while leaving any in-progress form untouched.
-setInterval(async()=>{if(document.hidden||!['people','photos'].includes(route())||document.activeElement?.closest('form'))return;try{await refresh();if(!document.querySelector('#photo-form input[type=file]')?.files.length)render();}catch{}},30000);
+window.addEventListener('hashchange',async()=>{render();window.scrollTo(0,0);main.focus({preventScroll:true});if(['invite','place','faq'].includes(route()))return;try{await refresh({admin:route()==='admin',own:route()==='rsvp'||route()==='photos'});if(!document.activeElement?.closest('form'))render();}catch(error){loadError=error.message;if(!document.activeElement?.closest('form'))render();const box=document.getElementById('connection-status');box.hidden=false;box.textContent=loadError;}});
+// Refresh on opening a data page or after a change, never continuously in an idle tab.
 render();boot();

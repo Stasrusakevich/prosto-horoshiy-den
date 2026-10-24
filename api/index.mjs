@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import sharp from 'sharp';
-import { store, images } from '../lib/storage.mjs';
+import { store as backingStore, images } from '../lib/storage.mjs';
+import { createReadCache } from '../lib/read-cache.mjs';
 import { HttpError, guestId, hash, cleanText, saveResponse, setResponseDeleted, limit, publicData, verifyPassword, sessionToken, validSession } from '../lib/domain.mjs';
+
+const publicCache=createReadCache(async()=>publicData(await backingStore.read()));
+const store={read:backingStore.read,async update(change){const result=await backingStore.update(change);publicCache.clear();return result;}};
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const tokenFrom=req=>(req.headers.authorization||'').replace(/^Bearer /,'');
@@ -26,8 +30,12 @@ export default async function handler(req,res){
     const url=new URL(req.url,'https://birthday.local'),action=url.searchParams.get('action')||'public';
     const isAdmin=adminFrom(req);
     if(req.method==='GET'){
+      if(action==='public')return json(res,200,await publicCache.read());
+      if(action==='admin'&&!isAdmin)throw new HttpError(401,'Войди в кабинет организатора.');
+      if(action==='me')guestId(tokenFrom(req));
+      if(action==='photo'&&!UUID.test(url.searchParams.get('id')||''))throw new HttpError(404,'Фото не найдено.');
+      if(!['me','admin','photo'].includes(action))throw new HttpError(404,'Страница не найдена.');
       const state=await store.read();
-      if(action==='public')return json(res,200,publicData(state));
       if(action==='me'){const id=guestId(tokenFrom(req));return json(res,200,{answer:state.responses[id]?.deletedAt?null:state.responses[id]||null,photos:Object.values(state.photos).filter(p=>p.ownerId===id&&!p.deleted).map(p=>({id:p.id,caption:p.caption,hidden:p.hidden}))});}
       if(action==='admin'){if(!isAdmin)throw new HttpError(401,'Войди в кабинет организатора.');return json(res,200,{guests:Object.values(state.responses).filter(g=>!g.deletedAt),deletedGuests:Object.values(state.responses).filter(g=>g.deletedAt),photos:Object.values(state.photos).filter(p=>!p.deleted&&!state.responses[p.ownerId]?.deletedAt).map(p=>({...p,name:state.responses[p.ownerId]?.name||'Гость'}))});}
       if(action==='photo'){
@@ -91,6 +99,6 @@ export default async function handler(req,res){
     throw new HttpError(404,'Действие не найдено.');
   }catch(error){
     if(!error.status)console.error('Birthday API failure:',error.name, !process.env.VERCEL ? String(error.message).replace(/vercel_blob_[\w-]+/g,'[redacted]') : '');
-    json(res,error.status||503,{error:error.status?error.message:'Не удалось сохранить или загрузить данные. Попробуй ещё раз.'});
+    json(res,error.status||503,{error:error.status?error.message:'Ответы и фотографии временно недоступны. Приглашение и адрес работают. Пока можно ответить Стасу в личном чате.'});
   }
 }
